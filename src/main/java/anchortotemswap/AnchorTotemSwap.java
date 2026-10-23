@@ -1,30 +1,120 @@
+
 package anchortotemswap;
 
-import net.fabricmc.api.ModInitializer;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.resources.Identifier;
+public class AnchorTotemSwap implements ClientModInitializer {
+    private static boolean enabled = true;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+    private static KeyMapping.Category category;
+    private static KeyMapping toggleKey;
+    private static KeyMapping swapKey;
 
-public class AnchorTotemSwap implements ModInitializer {
-	public static final String MOD_ID = "anchor-totem-swap";
+    @Override
+    public void onInitializeClient() {
+        category = KeyMapping.Category.register(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                "anchor-totem-swap", "main"
+            )
+        );
 
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+        toggleKey = KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.anchor-totem-swap.toggle",
+                GLFW.GLFW_KEY_UNKNOWN,
+                category
+            )
+        );
 
-	@Override
-	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+        swapKey = KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.anchor-totem-swap.manual_swap",
+                GLFW.GLFW_KEY_UNKNOWN,
+                category
+            )
+        );
 
-		LOGGER.info("Hello Fabric world!");
-	}
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (toggleKey.consumeClick()) {
+                enabled = !enabled;
+                message(client, "Anchor Totem Swap: " +
+                    (enabled ? "ON" : "OFF"));
+            }
 
-	public static Identifier id(String path) {
-		return Identifier.fromNamespaceAndPath(MOD_ID, path);
-	}
+            while (swapKey.consumeClick()) {
+                if (!enabled || client.player == null ||
+                    client.gameMode == null) {
+                    continue;
+                }
+
+                manualSwap(client);
+            }
+        });
+    }
+
+    private static void manualSwap(Minecraft client) {
+        var player = client.player;
+        var inventory = player.getInventory();
+
+        if (player.getOffhandItem().is(Items.TOTEM_OF_UNDYING)) {
+            message(client, "A totem is already in your offhand.");
+            return;
+        }
+
+        int slot = -1;
+
+        for (int i = 0; i < Inventory.getSelectionSize(); i++) {
+            if (inventory.getItem(i).is(Items.TOTEM_OF_UNDYING)) {
+                slot = i;
+                break;
+            }
+        }
+
+        if (slot == -1) {
+            for (int i = Inventory.getSelectionSize();
+                 i < inventory.getContainerSize(); i++) {
+                if (inventory.getItem(i).is(Items.TOTEM_OF_UNDYING)) {
+                    slot = i;
+                    break;
+                }
+            }
+        }
+
+        if (slot == -1) {
+            message(client, "No totems found in your inventory.");
+            return;
+        }
+
+        // Use Minecraft's normal inventory interaction.
+        client.gameMode.handleInventoryMouseClick(
+            player.inventoryMenu.containerId,
+            slot < Inventory.getSelectionSize()
+                ? 36 + slot
+                : slot,
+            40,
+            net.minecraft.world.inventory.ClickType.SWAP,
+            player
+        );
+
+        message(client, "Offhand totem swap requested.");
+    }
+
+    private static void message(Minecraft client, String text) {
+        if (client.player != null) {
+            client.player.displayClientMessage(
+                Component.literal("[Anchor Totem Swap] " + text),
+                true
+            );
+        }
+    }
 }
