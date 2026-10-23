@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
 
@@ -49,7 +48,7 @@ public class AnchorTotemSwap implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggleKey.consumeClick()) {
                 enabled = !enabled;
-                message(client, "Anchor Totem Swap: " + (enabled ? "ON" : "OFF"));
+                // No on-screen message when toggling.
             }
 
             while (swapKey.consumeClick()) {
@@ -64,7 +63,6 @@ public class AnchorTotemSwap implements ClientModInitializer {
     private static void manualSwap(Minecraft client) {
         long now = System.currentTimeMillis();
         if (now - lastSwapTime < SWAP_DELAY_MS) {
-            message(client, "Please wait before swapping again.");
             return;
         }
 
@@ -72,7 +70,6 @@ public class AnchorTotemSwap implements ClientModInitializer {
         var inventory = player.getInventory();
 
         if (player.getOffhandItem().is(Items.TOTEM_OF_UNDYING)) {
-            message(client, "A totem is already in your offhand.");
             return;
         }
 
@@ -85,15 +82,12 @@ public class AnchorTotemSwap implements ClientModInitializer {
         }
 
         if (inventoryIndex < 0) {
-            message(client, "No totems found in your inventory.");
             return;
         }
 
         // Player inventory menu slots: hotbar 0-8 are menu slots 36-44;
         // main inventory slots 9-35 keep their menu slot indices.
-        int menuSlot = inventoryIndex >= 0 && inventoryIndex < 9
-            ? 36 + inventoryIndex
-            : inventoryIndex;
+        int menuSlot = inventoryIndex < 9 ? 36 + inventoryIndex : inventoryIndex;
 
         client.gameMode.handleInventoryMouseClick(
             player.inventoryMenu.containerId,
@@ -104,15 +98,5 @@ public class AnchorTotemSwap implements ClientModInitializer {
         );
 
         lastSwapTime = now;
-        message(client, "Swap requested. Delay: 250 ms.");
-    }
-
-    private static void message(Minecraft client, String text) {
-        if (client.player != null) {
-            client.player.displayClientMessage(
-                Component.literal("[Anchor Totem Swap] " + text),
-                true
-            );
-        }
     }
 }
