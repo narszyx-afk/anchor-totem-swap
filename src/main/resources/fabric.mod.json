@@ -1,12 +1,11 @@
-
 {
   "schemaVersion": 1,
   "id": "anchor-totem-swap",
   "version": "${version}",
-  "name": "Anchor Totem Swap",
-  "description": "Client-side inventory utility with configurable keybinds.",
+  "name": "Anchor Optimizer",
+  "description": "A lightweight client-side utility for anchor PvP, with manual offhand totem swapping and configurable keybinds.",
   "authors": [
-    "Me!"
+    "narszyx-afk"
   ],
   "contact": {
     "homepage": "https://fabricmc.net/",
