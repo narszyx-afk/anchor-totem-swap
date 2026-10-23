@@ -6,14 +6,14 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
 
 public class AnchorTotemSwap implements ClientModInitializer {
-    private static final long SWAP_DELAY_MS = 250L;
+    // Short cooldown for manual swap attempts; inventory actions still run on client ticks.
+    private static final long SWAP_DELAY_MS = 5L;
     private static long lastSwapTime = 0L;
     private static boolean enabled = true;
 
